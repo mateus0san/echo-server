@@ -28,10 +28,13 @@ int main(void) {
 
   while (1) {
   int fd = accept(server, NULL, NULL);
+  if (fd <= 0) {
+    continue;
+  }
 
   int pid = fork();
   
-  if (fd > 0 && pid == 0) {
+  if (pid == 0) {
     char buf[1024];
     int size = 0;
     while ((size = read(fd,buf, 1024)) > 0) {
