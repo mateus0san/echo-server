@@ -2,12 +2,16 @@
 #include <sys/socket.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <signal.h>
+
 
 struct server_add {
     const char addr[16];
 };
 
 int main(void) {
+  signal(SIGCHLD, SIG_IGN);
+
   int server = socket(AF_INET, SOCK_STREAM, 0);
   if (server == -1) {
     return 1;
@@ -27,21 +31,30 @@ int main(void) {
   }
 
   while (1) {
-  int fd = accept(server, NULL, NULL);
-  if (fd <= 0) {
-    continue;
-  }
+    int fd = accept(server, NULL, NULL);
+    if (fd < 0) {
+      continue;
+    }
 
-  int pid = fork();
+    int pid = fork();
   
-  if (pid == 0) {
+    if (pid != 0) {
+      close(fd);
+      continue;
+    }
+
+    close(server);
+
     char buf[1024];
     int size = 0;
+
     while ((size = read(fd,buf, 1024)) > 0) {
       write(fd, buf, size);
     }
+
     shutdown(fd, SHUT_RDWR);
-   }
+    close(fd);
+    return 0;
   }
 
   return 0;
